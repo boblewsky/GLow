@@ -25,9 +25,16 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
+using OpenTK;
+using OpenTK.Graphics;
+using Application = System.Windows.Application;
+using Cursors = System.Windows.Input.Cursors;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using MessageBox = System.Windows.MessageBox;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace GLow_Screensaver.Controls
 {
@@ -108,6 +115,8 @@ namespace GLow_Screensaver.Controls
         /// used to hide the cursor after a delay.
         /// </summary>
         private DateTime _timeVisibleMouse = DateTime.Now;
+
+        private GLControl _glControl;
         #endregion
 
         #region Constructors
@@ -119,6 +128,20 @@ namespace GLow_Screensaver.Controls
             _isDesignMode = (LicenseManager.UsageMode == LicenseUsageMode.Designtime);
 
             InitializeComponent();
+
+            if (!_isDesignMode)
+            {
+                _glControl = new GLControl(new GraphicsMode(new ColorFormat(32), 24, 0, 8));
+                _glControl.VSync = false;
+                _glControl.Load += GlControl_Load;
+                _glControl.Paint += GlControl_Paint;
+                _glControl.Resize += GlControl_Resize;
+                _glControl.MouseMove += glControl_MouseMove;
+                _glControl.MouseDown += glControl_MouseDown;
+
+                wfContainer.Child = _glControl;
+            }
+
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
         #endregion
@@ -164,7 +187,7 @@ namespace GLow_Screensaver.Controls
         /// <param name="e">The argument for this event.</param>
         private void CompositionTarget_Rendering(object sender, EventArgs e)
         {
-            if (_glInitialized) glControl.Invalidate();
+            if (_glInitialized) _glControl.Invalidate();
         }
 
         /// <summary>
@@ -245,7 +268,7 @@ namespace GLow_Screensaver.Controls
         {
             if (!_isDesignMode)
             {
-                glControl.MakeCurrent();
+                _glControl.MakeCurrent();
 
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
@@ -253,8 +276,9 @@ namespace GLow_Screensaver.Controls
                 GL.LoadIdentity();
 
                 // Set the resolution iResolution used by the shader
-                float w = glControl.Width;
-                float h = glControl.Height;
+                float w = _glControl.Width;
+                float h = _glControl.Height;
+
                 int iResolution = GL.GetUniformLocation(_glProgram, "iResolution");
                 if (iResolution != -1) GL.Uniform3(iResolution, (float)w, (float)h, (float)0);
 
@@ -275,13 +299,13 @@ namespace GLow_Screensaver.Controls
                 GL.Begin(BeginMode.Quads);
                 GL.Color3(0, 0, 0);
                 GL.Vertex2(0, 0);
-                GL.Vertex2(glControl.Width, 0);
-                GL.Vertex2(glControl.Width, glControl.Height);
-                GL.Vertex2(0, glControl.Height);
+                GL.Vertex2(_glControl.Width, 0);
+                GL.Vertex2(_glControl.Width, _glControl.Height);
+                GL.Vertex2(0, _glControl.Height);
                 GL.End();
 
                 // Show the back buffer
-                glControl.SwapBuffers();
+                _glControl.SwapBuffers();
 
                 // Update the FPS
                 if ((DateTime.Now - _timeFPS).TotalSeconds >= 1)
@@ -313,7 +337,7 @@ namespace GLow_Screensaver.Controls
             if (!_isDesignMode)
             {
                 SetupViewport();
-                glControl.Invalidate();
+                _glControl.Invalidate();
             }
         }
 
@@ -322,8 +346,8 @@ namespace GLow_Screensaver.Controls
         /// </summary>
         private void SetupViewport()
         {
-            int w = glControl.Width;
-            int h = glControl.Height;
+            int w = _glControl.Width;
+            int h = _glControl.Height;
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
             GL.Ortho(0, w, 0, h, -1, 1);    //Bottom left corner pixel has corrdinate 0,0

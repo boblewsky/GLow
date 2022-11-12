@@ -24,8 +24,6 @@
              Height="313" Width="465" KeyDown="Window_KeyDown" Focusable="False">
 
     <Grid x:Name="grid" Focusable="False">
-        <WindowsFormsHost  x:Name="wfContainer" Focusable="False">
-            <GL:GLControl x:Name="glControl" VSync="False" Load="GlControl_Load" Resize="GlControl_Resize" Paint="GlControl_Paint" MouseMove="glControl_MouseMove" MouseDown="glControl_MouseDown" />
-        </WindowsFormsHost>
+        <WindowsFormsHost  x:Name="wfContainer" Focusable="False" />
     </Grid>
 </UserControl>
