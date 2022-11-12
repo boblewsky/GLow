@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace GLow_Screensaver {
+namespace GLow_Screensaver.Resources {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace GLow_Screensaver {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("GLow_Screensaver.PrivateData", typeof(PrivateData).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("GLow_Screensaver.Resources.PrivateData", typeof(PrivateData).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,7 +61,7 @@ namespace GLow_Screensaver {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to rtrtMw.
         /// </summary>
         internal static string ShaderToyKey {
             get {
