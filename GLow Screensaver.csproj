@@ -8,10 +8,11 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>GLow_Screensaver</RootNamespace>
     <AssemblyName>GLow Screensaver</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <PublishUrl>C:\Users\svanp\Documents\Visual Studio 2015\Projects\GLow Screensaver\Published\</PublishUrl>
@@ -134,7 +135,11 @@
     </Compile>
     <Compile Include="Data\ImageSource.cs" />
     <Compile Include="Data\Shader.cs" />
-    <Compile Include="PrivateData.Designer.cs" />
+    <Compile Include="PrivateData.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PrivateData.resx</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\WPFAssemblyInfo.cs" />
     <Compile Include="SQLite.cs" />
@@ -203,8 +208,7 @@
     <None Include="packages.config" />
     <EmbeddedResource Include="PrivateData.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>PrivateData1.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
+      <LastGenOutput>PrivateData.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="xshd\GLSL.xshd" />
     <Resource Include="Images\favorite.png">
