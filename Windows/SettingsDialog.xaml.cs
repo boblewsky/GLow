@@ -261,7 +261,7 @@ namespace GLow_Screensaver
         }
 
         /// <summary>
-        /// Save the settings and close the window.
+        /// Save the settings
         /// </summary>
         /// <param name="sender">Object sending this event.</param>
         /// <param name="e">Argument for this event.</param>
@@ -273,6 +273,17 @@ namespace GLow_Screensaver
                 RegistryKey folder = Registry.CurrentUser.CreateSubKey(@"Software\GLow Screensaver\");
                 folder.SetValue("ShaderId", shader.Id);
             }
+        }
+
+        /// <summary>
+        /// Save the settings and close the dialog
+        /// </summary>
+        /// <param name="sender">Object sending this event.</param>
+        /// <param name="e">Argument for this event.</param>
+        private void buttonOK_Click(object sender, RoutedEventArgs e)
+        {
+            buttonApply_Click(this, e);
+
             Close();
         }
 
@@ -298,13 +309,24 @@ namespace GLow_Screensaver
         }
 
         /// <summary>
-        /// Reduice the window.
+        /// Minimize the window.
         /// </summary>
         /// <param name="sender">Object sending this event.</param>
         /// <param name="e">Argument for this event.</param>
-        private void buttonWindowReduice_Click(object sender, RoutedEventArgs e)
+        private void buttonWindowMinimize_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
+        }
+
+        /// <summary>
+        /// Maximize the window.
+        /// </summary>
+        /// <param name="sender">Object sending this event.</param>
+        /// <param name="e">Argument for this event.</param>
+
+        private void buttonWindowMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
         }
 
         /// <summary>
@@ -404,5 +426,10 @@ namespace GLow_Screensaver
             editWindow.ShowDialog();
         }
         #endregion
+
+        private void ButtonWindowMaximize_OnClick(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
