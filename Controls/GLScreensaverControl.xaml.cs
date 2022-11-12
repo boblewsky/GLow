@@ -79,7 +79,7 @@ namespace GLow_Screensaver.Controls
         private bool _isDesignMode = false;
 
         /// <summary>
-        /// Start time used with the iGlobalTime variable used in the shaders.
+        /// Start time used with the iTime variable used in the shaders.
         /// </summary>
         private DateTime _startTime;
 
@@ -136,7 +136,7 @@ namespace GLow_Screensaver.Controls
                 // Set the default background color of the OpenGL control
                 GL.ClearColor(0.0f, 1.0f, 0.0f, 1.0f);
 
-                // Starting time for iGlobalTime variable
+                // Starting time for iTime variable
                 _startTime = Process.GetCurrentProcess().StartTime;
 
                 // Prépare le vertex shader			
@@ -192,7 +192,7 @@ namespace GLow_Screensaver.Controls
             {
                 // Insert in the first line the global variables used by the shader
                 imageSourceCode = "uniform vec3  iResolution;\r\n" + imageSourceCode;
-                imageSourceCode = "uniform float iGlobalTime;" + imageSourceCode;
+                imageSourceCode = "uniform float iTime;" + imageSourceCode;
                 imageSourceCode = "uniform vec4 iMouse;" + imageSourceCode;
                 imageSourceCode = "uniform vec4 iDate;" + imageSourceCode;
                 imageSourceCode = "out vec4 out_frag_color;" + imageSourceCode;
@@ -258,10 +258,10 @@ namespace GLow_Screensaver.Controls
                 int iResolution = GL.GetUniformLocation(_glProgram, "iResolution");
                 if (iResolution != -1) GL.Uniform3(iResolution, (float)w, (float)h, (float)0);
 
-                // Set the iGlobalTime variable used by the shader
+                // Set the iTime variable used by the shader
                 float timespan = (float)(DateTime.Now - _startTime).TotalSeconds;
-                int iGlobalTime = GL.GetUniformLocation(_glProgram, "iGlobalTime");
-                if (iGlobalTime != -1) GL.Uniform1(iGlobalTime, (float)timespan);
+                int iTime = GL.GetUniformLocation(_glProgram, "iTime");
+                if (iTime != -1) GL.Uniform1(iTime, (float)timespan);
 
                 // Set the iDate variable used by some shaders
                 int iDate = GL.GetUniformLocation(_glProgram, "iDate");
