@@ -24,11 +24,15 @@ using GLowScreensaver;
 using Newtonsoft.Json;
 using SQLite;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace GLow_Screensaver
@@ -42,7 +46,8 @@ namespace GLow_Screensaver
         /// <summary>
         /// URL to the JSON services.
         /// </summary>
-        private const string SHADERTOY_JSON_URL = "https://www.shadertoy.com/api/v1/shaders";
+        private static readonly string SHADERTOY_JSON_URL = "https://www.shadertoy.com/api/v1/shaders";
+        private static readonly string SHADER_NOT_FOUND_RESPONSE = "{\"Error\":\"Shader not found\"}";
         #endregion
         #region Attributes
         /// <summary>
@@ -57,7 +62,8 @@ namespace GLow_Screensaver
         internal class WorkerData
         {
             public int NbShaders { get; set; }
-            public Shader ShaderInfo { get; set; }
+            public string ShaderToyId { get; set; }
+            public string ShaderName { get; set; }
         }
         #endregion
 
@@ -125,8 +131,8 @@ namespace GLow_Screensaver
 
             progress.Maximum = data.NbShaders;
             progress.Value = e.ProgressPercentage;
-            shaderIDText.Text = data.ShaderInfo.ShadertoyID;
-            shaderNameText.Text = data.ShaderInfo.Name;
+            shaderIDText.Text = data.ShaderToyId;
+            shaderNameText.Text = data.ShaderName;
         }
 
         /// <summary>
@@ -136,50 +142,64 @@ namespace GLow_Screensaver
         /// <param name="e">Argument for this event.</param>
         private void Worker_DoWork(object sender, DoWorkEventArgs e)
         {
+            // Load the shader list
+            List<string> shaderList = GetShadertoyList();
+            if (shaderList == null) 
+                return;
+
             // Get the connection to the database before to retreive the data from Shadertoy
             SQLiteConnection db = Database.Instance.GetConnection();
 
-            // Load the shader list
-            List<string> shaderList = GetShadertoyList();
-            if (shaderList == null) return;
+            // Load the informations of each shader
+            var index = 0;
+            var shaders = new BlockingCollection<Shader>();
+            var imageSources = new BlockingCollection<ImageSource>();
+            var dbShader = db.Table<Shader>().ToList();
+            var idToShader = dbShader.ToDictionary(k => k.ShadertoyID, v => v);
+
+            Parallel.ForEach(shaderList, new ParallelOptions {MaxDegreeOfParallelism = 128}, shaderId =>
+            {
+                var shader = new Shader
+                {
+                    ShadertoyID = shaderId,
+                    ReadOnly = true,
+                    Favorite = false,
+                    Type = "GLSL",
+                    LastUpdate = DateTime.Now
+                };
+
+                if (!idToShader.ContainsKey(shaderId))
+                {
+                    var shadertoy = GetShadertoyShader(shaderId);
+                    if (shadertoy != null)
+                    {
+                        shader.Name = shadertoy.Shader.info.name;
+                        shader.Description = shadertoy.Shader.info.description;
+                        shader.Author = shadertoy.Shader.info.username;
+                        shaders.Add(shader);
+
+                        imageSources.Add(new ImageSource
+                        {
+                            Shader = shader.Id,
+                            SourceCode = shadertoy.Shader.renderpass[0].code
+                        });
+                    };
+                }
+
+                Interlocked.Increment(ref index);
+                _worker.ReportProgress(index, new WorkerData() { NbShaders = shaderList.Count, ShaderToyId = shader.ShadertoyID, ShaderName = shader.Name });
+            });
 
             db.BeginTransaction();
 
-            // Load the informations of each shader
-            int index = 0;
-            foreach (string shaderId in shaderList)
+            foreach (var shader in shaders)
             {
-                // If this shader exists already, read its the informations from the database
-                Shader shader = (from s in db.Table<Shader>() where s.ShadertoyID.Equals(shaderId) select s).FirstOrDefault();
-                if (shader == null)
-                {
-                    ShaderV1 shadertoy = GetShadertoyShader(shaderId);
+                db.Insert(shader);
+            }
 
-                    // Sauvegarde la shader
-                    shader = new Shader()
-                    {
-                        ShadertoyID = shaderId,
-                        Name = shadertoy.Shader.info.name,
-                        Description = shadertoy.Shader.info.description,
-                        Author = shadertoy.Shader.info.username,
-                        ReadOnly = true,
-                        Favorite = false,
-                        Type = "GLSL",
-                        LastUpdate = DateTime.Now
-                    };
-                    db.Insert(shader);
-
-                    // Source garde le source
-                    ImageSource imageSource = new ImageSource()
-                    {
-                        Shader = shader.Id,
-                        SourceCode = shadertoy.Shader.renderpass[0].code
-                    };
-                    db.Insert(imageSource);
-                }
-
-                _worker.ReportProgress(++index, new WorkerData() { NbShaders = shaderList.Count, ShaderInfo = shader });
-                if (_worker.CancellationPending) break;
+            foreach (var imageSource in imageSources)
+            {
+                db.Insert(imageSource);
             }
 
             db.Commit();
@@ -191,20 +211,25 @@ namespace GLow_Screensaver
         /// <returns>The liste of shaders.</returns>
         public List<string> GetShadertoyList()
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(SHADERTOY_JSON_URL + "?key=" + PrivateData.ShaderToyKey);
+            var request = (HttpWebRequest)WebRequest.Create(SHADERTOY_JSON_URL + "?key=" + GLow_Screensaver.Resources.PrivateData.ShaderToyKey);
             request.Method = "POST";
             request.ContentType = "application/json";
 
-            List<string> shaderIdList = null;
-            var httpResponse = (HttpWebResponse)request.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            using (var response = (HttpWebResponse)request.GetResponse())
+            using (var stream = response.GetResponseStream())
             {
-                string responseText = streamReader.ReadToEnd();
-                ListAll obj = JsonConvert.DeserializeObject<ListAll>(responseText);
-                shaderIdList = new List<string>(obj.Results);
+                if (stream == null)
+                    return null;
+
+                using (var reader = new StreamReader(stream))
+                {
+                    var responseText = reader.ReadToEnd();
+                    var obj = JsonConvert.DeserializeObject<ListAll>(responseText);
+                    return new List<string>(obj.Results);
+                }
             }
 
-            return shaderIdList;
+            return null;
         }
 
         /// <summary>
@@ -214,22 +239,29 @@ namespace GLow_Screensaver
         /// <returns>The shader downloaded.</returns>
         public ShaderV1 GetShadertoyShader(string id)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(SHADERTOY_JSON_URL + "/" + id + "?key=" + PrivateData.ShaderToyKey);
+            var request = (HttpWebRequest)WebRequest.Create(SHADERTOY_JSON_URL + "/" + id + "?key=" + GLow_Screensaver.Resources.PrivateData.ShaderToyKey);
             request.Method = "POST";
             request.ContentType = "application/json";
 
-            ShaderV1 shader = null;
-            var httpResponse = (HttpWebResponse)request.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            using (var response = (HttpWebResponse)request.GetResponse())
+            using (var stream = response.GetResponseStream())
             {
-                string responseText = streamReader.ReadToEnd();
-                Debug.WriteLine(responseText);
-                shader = JsonConvert.DeserializeObject<ShaderV1>(responseText);
-                //Now you have your response.
-                //or false depending on information in the response
+                if (stream == null) 
+                    return null;
+
+                using (var reader = new StreamReader(stream))
+                {
+                    var responseText = reader.ReadToEnd();
+
+                    Debug.WriteLine(responseText);
+                    if (responseText != SHADER_NOT_FOUND_RESPONSE)
+                        return JsonConvert.DeserializeObject<ShaderV1>(responseText);
+                    //Now you have your response.
+                    //or false depending on information in the response
+                }
             }
 
-            return shader;
+            return null;
         }
         #endregion
     }
