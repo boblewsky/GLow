@@ -262,8 +262,6 @@
     <Content Include="Resources\glow.ico" />
     <Content Include="Images\glow.ico" />
     <None Include="Inno setup\GLow.iss" />
-    <Content Include="Lib\x64\sqlite3.dll" />
-    <Content Include="Lib\x86\sqlite3.dll" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
@@ -271,11 +269,8 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if '$(PROCESSOR_ARCHITECTURE)'=='AMD64' (xcopy /y "$(ProjectDir)Lib\x64\sqlite3.dll" ".\") 
-if '$(PROCESSOR_ARCHITECTURE)'=='x86' (xcopy /y "$(ProjectDir)Lib\x86\sqlite3.dll" ".\")
-if '$(PROCESSOR_ARCHITEW6432)'=='AMD64' (xcopy /y "$(ProjectDir)Lib\x64\sqlite3.dll" ".\")
-
-copy "$(TargetPath)" "GLow.scr"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <Import Project="packages\System.Data.SQLite.Core.1.0.99.0\build\net40\System.Data.SQLite.Core.targets" Condition="Exists('packages\System.Data.SQLite.Core.1.0.99.0\build\net40\System.Data.SQLite.Core.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
