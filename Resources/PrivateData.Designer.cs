@@ -61,7 +61,7 @@ namespace GLow_Screensaver.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to rtrtMw.
+        ///   Looks up a localized string similar to .
         /// </summary>
         internal static string ShaderToyKey {
             get {
