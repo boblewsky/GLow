@@ -76,6 +76,8 @@ namespace GLow_Screensaver
 #endif
             Loaded += NormalModeWindow_Loaded;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+
+            Cursor = Cursors.None;
         }
 
         /// <summary>
