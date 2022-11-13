@@ -284,7 +284,7 @@ namespace GLow_Screensaver
         {
             buttonApply_Click(this, e);
 
-            Close();
+            cancel_Click(sender, e);
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace GLow_Screensaver
         /// <param name="e"></param>
         private void cancel_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            Application.Current.Shutdown();
         }
 
         /// <summary>
@@ -336,7 +336,7 @@ namespace GLow_Screensaver
         /// <param name="e">Argument for this event.</param>
         private void buttonWindowCancel_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            cancel_Click(sender, e);
         }
 
         /// <summary>
