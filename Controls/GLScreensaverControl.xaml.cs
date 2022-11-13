@@ -24,6 +24,7 @@ using SQLite;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
@@ -34,6 +35,7 @@ using Application = System.Windows.Application;
 using Cursors = System.Windows.Input.Cursors;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
+using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace GLow_Screensaver.Controls
@@ -110,13 +112,9 @@ namespace GLow_Screensaver.Controls
         /// </summary>
         private DateTime _timeFPS = DateTime.Now;
 
-        /// <summary>
-        /// The time when the mouse has been moved for the last time. This is
-        /// used to hide the cursor after a delay.
-        /// </summary>
-        private DateTime _timeVisibleMouse = DateTime.Now;
-
         private GLControl _glControl;
+
+        private uint _fbHandle;
         #endregion
 
         #region Constructors
@@ -131,7 +129,7 @@ namespace GLow_Screensaver.Controls
 
             if (!_isDesignMode)
             {
-                _glControl = new GLControl(new GraphicsMode(ColorFormat.Empty, 24, 0, 8));
+                _glControl = new GLControl(new GraphicsMode(GraphicsMode.Default.ColorFormat, GraphicsMode.Default.Depth, GraphicsMode.Default.Stencil, 8, GraphicsMode.Default.ColorFormat, 3));
                 _glControl.VSync = true;
                 _glControl.Load += GlControl_Load;
                 _glControl.Paint += GlControl_Paint;
@@ -157,7 +155,7 @@ namespace GLow_Screensaver.Controls
             if (!_isDesignMode)
             {
                 // Set the default background color of the OpenGL control
-                GL.ClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+                GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
                 // Starting time for iTime variable
                 _startTime = Process.GetCurrentProcess().StartTime;
@@ -172,6 +170,7 @@ namespace GLow_Screensaver.Controls
                 GL.AttachShader(_glProgram, vertexShader);
                 GL.LinkProgram(_glProgram);
                 GL.UseProgram(_glProgram);
+
 
                 SetupViewport();
 
@@ -213,15 +212,20 @@ namespace GLow_Screensaver.Controls
         {
             if (_glProgram > 0)
             {
-                // Insert in the first line the global variables used by the shader
-                imageSourceCode = "uniform vec3  iResolution;\r\n" + imageSourceCode;
-                imageSourceCode = "uniform float iTime;" + imageSourceCode;
-                imageSourceCode = "uniform vec4 iMouse;" + imageSourceCode;
-                imageSourceCode = "uniform vec4 iDate;" + imageSourceCode;
-                imageSourceCode = "out vec4 out_frag_color;" + imageSourceCode;
-                imageSourceCode = "#version 150\r\n" + imageSourceCode;
-
-                imageSourceCode = imageSourceCode + "\r\nvoid main(void) {vec4 fragColor;mainImage(fragColor,gl_FragCoord.xy);out_frag_color=fragColor;}";
+                var builder = new StringBuilder();
+                builder.AppendLine("#version 150");
+                builder.AppendLine("out vec4 out_frag_color;");
+                builder.AppendLine("uniform vec4 iDate;");
+                builder.AppendLine("uniform vec4 iMouse;");
+                builder.AppendLine("uniform float iTime;");
+                builder.AppendLine("uniform vec3 iResolution;");
+                builder.AppendLine(imageSourceCode);
+                builder.AppendLine("void main(void)");
+                builder.AppendLine("{");
+                builder.AppendLine("vec4 fragColor;");
+                builder.AppendLine("mainImage(fragColor,gl_FragCoord.xy);");
+                builder.AppendLine("out_frag_color=fragColor;");
+                builder.AppendLine("}");
 
                 // Delete the current fragment shader
                 if (_glFramentShader > 0)
@@ -233,7 +237,7 @@ namespace GLow_Screensaver.Controls
 
                 // Create the new fragment shader
                 _glFramentShader = GL.CreateShader(ShaderType.FragmentShader);
-                GL.ShaderSource(_glFramentShader, imageSourceCode);
+                GL.ShaderSource(_glFramentShader, builder.ToString());
                 GL.CompileShader(_glFramentShader);
 
                 // Check if some errors are existing. This method is not clean but i can't use the extensions of OpenGL.
@@ -259,7 +263,8 @@ namespace GLow_Screensaver.Controls
         /// <param name="e">Argument for this event.</param>
         private void GlControl_Paint(object sender, System.Windows.Forms.PaintEventArgs e)
         {
-            if (!_isDesignMode) Render();
+            if (!_isDesignMode) 
+                Render();
         }
 
         /// <summary>
@@ -281,7 +286,7 @@ namespace GLow_Screensaver.Controls
                 float h = _glControl.Height;
 
                 int iResolution = GL.GetUniformLocation(_glProgram, "iResolution");
-                if (iResolution != -1) GL.Uniform3(iResolution, (float)w, (float)h, (float)0);
+                if (iResolution != -1) GL.Uniform3(iResolution, w, h, 0);
 
                 // Set the iTime variable used by the shader
                 float timespan = (float)(DateTime.Now - _startTime).TotalSeconds;
@@ -316,12 +321,6 @@ namespace GLow_Screensaver.Controls
                     _fps = 0;
                 }
                 _fps++;
-
-                // Hide the mouse after a delay if it's not a preview
-                if ((!IsPreview) && ((DateTime.Now - _timeVisibleMouse).TotalSeconds >= 5))
-                {
-                    Mouse.OverrideCursor = Cursors.None;
-                }
             }
         }
         #endregion
@@ -363,9 +362,11 @@ namespace GLow_Screensaver.Controls
         /// <param name="e"></param>
         private void glControl_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if (e.Button == System.Windows.Forms.MouseButtons.Right) _mousePosition = new Point(e.X, e.Y);
-            Mouse.OverrideCursor = Cursors.Arrow;
-            _timeVisibleMouse = DateTime.Now;
+            if (e.Button == System.Windows.Forms.MouseButtons.Right) 
+                _mousePosition = new Point(e.X, e.Y);
+
+            if (!IsPreview)
+                Mouse.OverrideCursor = Cursors.None;
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -388,8 +389,13 @@ namespace GLow_Screensaver.Controls
             // FIXME when a click happen, just fire an event that the window can catch
             if (!IsPreview)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left) 
+                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                {
+                    GL.Ext.DeleteFramebuffers(1, ref _fbHandle);
+                    _glControl.Dispose();
                     Application.Current.Shutdown();
+                }
+
             }
         }
         #endregion

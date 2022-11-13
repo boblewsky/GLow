@@ -71,13 +71,13 @@ namespace GLow_Screensaver
             Width = workingArea.Width;
             Height = workingArea.Height;
 #else
-            Width = 640;
-            Height = 400;
+            Left = workingArea.Left;
+            Top = workingArea.Top;
+            Width = 1024;
+            Height = 768;
 #endif
             Loaded += NormalModeWindow_Loaded;
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
-
-            Cursor = Cursors.None;
         }
 
         /// <summary>
@@ -137,7 +137,8 @@ namespace GLow_Screensaver
         private void NormalModeWindow_Loaded(object sender, RoutedEventArgs e)
         {
 #if !DEBUG
-            if (!IsPreview) {
+            if (!IsPreview)
+            {
                 WindowState = WindowState.Maximized;
                 Topmost = true;
             }
