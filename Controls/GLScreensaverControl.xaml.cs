@@ -131,8 +131,8 @@ namespace GLow_Screensaver.Controls
 
             if (!_isDesignMode)
             {
-                _glControl = new GLControl(new GraphicsMode(new ColorFormat(32), 24, 0, 8));
-                _glControl.VSync = false;
+                _glControl = new GLControl(new GraphicsMode(ColorFormat.Empty, 24, 0, 8));
+                _glControl.VSync = true;
                 _glControl.Load += GlControl_Load;
                 _glControl.Paint += GlControl_Paint;
                 _glControl.Resize += GlControl_Resize;
@@ -241,7 +241,8 @@ namespace GLow_Screensaver.Controls
                 if (result != "" && result.ToLower() != "no errors.")
                 {
                     Debug.WriteLine(result);
-                    MessageBox.Show(result);
+                    // Unsupported for screensaver
+                    //MessageBox.Show(result);
                 }
 
                 // Attach the fragment shader to the program
@@ -387,7 +388,8 @@ namespace GLow_Screensaver.Controls
             // FIXME when a click happen, just fire an event that the window can catch
             if (!IsPreview)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left) Application.Current.Shutdown();
+                if (e.Button == System.Windows.Forms.MouseButtons.Left) 
+                    Application.Current.Shutdown();
             }
         }
         #endregion
