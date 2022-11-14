@@ -391,7 +391,6 @@ namespace GLow_Screensaver.Controls
             {
                 if (e.Button == System.Windows.Forms.MouseButtons.Left)
                 {
-                    GL.Ext.DeleteFramebuffers(1, ref _fbHandle);
                     _glControl.Dispose();
                     Application.Current.Shutdown();
                 }

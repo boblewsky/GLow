@@ -21,6 +21,7 @@ using System;
 using System.Text;
 using System.Windows;
 using System.Windows.Forms;
+using GLow_Screensaver.Windows;
 
 namespace GLow_Screensaver
 {
@@ -55,8 +56,10 @@ namespace GLow_Screensaver
                 // Display the screensaver on each screen
                 foreach (Screen screen in Screen.AllScreens)
                 {
-                    MainWindow window = new MainWindow(screen.WorkingArea) { IsPreview = false };
-                    window.Show();
+                    using (var window = new RenderWindow())
+                        window.Run(60.0);
+
+                    App.Current.Shutdown();
                 }
             }
             // Show the settings dialog
